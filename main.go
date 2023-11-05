@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -20,6 +21,7 @@ var (
 func init() {
 	pflag.StringVarP(&Token, "token", "t", "", "Authenticate using Discord bot token")
 	pflag.Parse()
+	pflag.Usage = Help
 }
 
 func Help() {
@@ -56,25 +58,41 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if m.Content == "ping" {
-		s.ChannelMessageSend(m.ChannelID, "Pong!")
+	commandPrefix := "!"
+
+	if !strings.HasPrefix(m.Content, commandPrefix) {
+		return
 	}
 
-	if m.Content == "pong" {
+	parts := strings.Fields(m.Content)
+	if len(parts) < 1 {
+		return
+	}
+
+	command := strings.TrimPrefix(parts[0], commandPrefix)
+	switch command {
+	case "ping":
+		slog.Info("Command recieved:", "command", "ping")
+		s.ChannelMessageSend(m.ChannelID, "Pong!")
+		slog.Info("Response sent:", "message", "Pong!")
+	case "pong":
+		slog.Info("Command recieved:", "command", "pong")
 		s.ChannelMessageSend(m.ChannelID, "Ping!")
+		slog.Info("Response sent:", "message", "Ping!")
 	}
 }
 
 func Setup() (dg *discordgo.Session, err error) {
 	if len(Token) == 0 {
-		err = errors.New("token not set or provided")
+		err = errors.New("bot token not set or provided")
 		return
 	}
 	dg, err = discordgo.New("Bot " + Token)
 	if err != nil {
-		slog.Error("unable to create a Discord session:")
+		slog.Error("Unable to create a Discord session:")
 		return
 	}
+	
 
 	dg.AddHandler(messageCreate)
 	dg.Identify.Intents = discordgo.IntentGuildMessages
@@ -82,30 +100,33 @@ func Setup() (dg *discordgo.Session, err error) {
 }
 
 func Launch(dg *discordgo.Session) (err error) {
+	slog.Info("Starting the Bot...")
 	if err = dg.Open(); err != nil {
-		slog.Error("unable to open the websocket connection")
+		slog.Error("Unable to open the websocket connection")
 		return
 	}
-	slog.Info("Bot is now running.  Press CTRL-C to exit.")
+	slog.Info("Bot is now running. Press \"CTRL+C\" to exit.")
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
 
+	slog.Warn("Shutting down the bot...")
 	dg.Close()
+	slog.Info("Bot is now stopped.")
 	return
 }
 
 func main() {
 	dg, err := Setup()
 	if err != nil {
-		slog.Error("unable to setup the bot:", "reason", err)
-		Help()
+		slog.Error("Unable to setup the bot:", "reason", err)
+		pflag.Usage()
 		return
 	}
 	if err = Launch(dg); err != nil {
-		slog.Error("unable to launch the bot:", "reason", err)
-		Help()
+		slog.Error("Unable to launch the bot:", "reason", err)
+		pflag.Usage()
 		return
 	}
 }
