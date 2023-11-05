@@ -44,11 +44,13 @@ func Help() {
 		})
 	})
 
+	header := []string{"Flag", "Shorthand", "Type", "Default Value", "Description"}
+
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Flag", "Shorthand", "Type", "Default Value", "Description"})
+	table.SetHeader(header)
 	table.SetAutoWrapText(false)
 	table.SetAlignment(tablewriter.ALIGN_CENTER)
-	table.SetBorder(false)
+	table.SetBorder(true)
 	table.AppendBulk(data)
 	table.Render()
 }
@@ -82,6 +84,26 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
+func botDetails(s *discordgo.Session) (err error) {
+	botUser, err := s.User("@me")
+	if err != nil {
+		slog.Error("Unable to fetch bot details")
+		return
+	}
+
+	header := []string{"User ID", "Username", "Discriminator"}
+	data := []string{botUser.ID, botUser.Username, botUser.Discriminator}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader(header)
+	table.SetAutoWrapText(false)
+	table.SetAlignment(tablewriter.ALIGN_CENTER)
+	table.SetBorder(true)
+	table.Append(data)
+	table.Render()
+	return
+}
+
 func Setup() (dg *discordgo.Session, err error) {
 	if len(Token) == 0 {
 		err = errors.New("bot token not set or provided")
@@ -89,10 +111,23 @@ func Setup() (dg *discordgo.Session, err error) {
 	}
 	dg, err = discordgo.New("Bot " + Token)
 	if err != nil {
-		slog.Error("Unable to create a Discord session:")
+		slog.Error("Unable to create a Discord session")
 		return
 	}
-	
+
+	if err = botDetails(dg); err != nil {
+		return
+	}
+
+	fmt.Println("Press \"c\" to continue or any other key to exit...")
+	var input string
+	fmt.Scanln(&input)
+
+	if input != "c" && input != "C" {
+		err = errors.New("manual interruption by user")
+		slog.Warn("Exiting...")
+		return
+	}
 
 	dg.AddHandler(messageCreate)
 	dg.Identify.Intents = discordgo.IntentGuildMessages
@@ -105,7 +140,7 @@ func Launch(dg *discordgo.Session) (err error) {
 		slog.Error("Unable to open the websocket connection")
 		return
 	}
-	slog.Info("Bot is now running. Press \"CTRL+C\" to exit.")
+	slog.Info("Bot is now running. Press \"CTRL+C\" to exit")
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
@@ -113,7 +148,7 @@ func Launch(dg *discordgo.Session) (err error) {
 
 	slog.Warn("Shutting down the bot...")
 	dg.Close()
-	slog.Info("Bot is now stopped.")
+	slog.Info("Bot is now stopped")
 	return
 }
 
