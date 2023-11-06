@@ -29,8 +29,8 @@ func (p *Ping) ExecuteCommand(ctx context.Context) (err error) {
 	s := p.Session
 	m := p.MessageCreate
 
-	slog.InfoContext(ctx, "Command recieved:", "command", "ping", "requestId", ctx.Value("requestId"))
+	slog.InfoContext(ctx, "Command recieved:", "command", "ping")
 	s.ChannelMessageSend(m.ChannelID, "Pong!")
-	slog.InfoContext(ctx, "Response sent:", "message", "Pong!", "requestId", ctx.Value("requestId"))
+	slog.InfoContext(ctx, "Response sent:", "message", "Pong!")
 	return
 }
