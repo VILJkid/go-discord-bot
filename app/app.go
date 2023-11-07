@@ -10,11 +10,11 @@ import (
 
 	"github.com/VILJkid/go-discord-bot/pkg/bot"
 	"github.com/VILJkid/go-discord-bot/pkg/events"
+	"github.com/VILJkid/go-discord-bot/pkg/utils"
 	"github.com/bwmarrin/discordgo"
-	"github.com/olekukonko/tablewriter"
 )
 
-func botDetails(s *discordgo.Session) (err error) {
+func preFlightCheck(s *discordgo.Session) (err error) {
 	botUser, err := s.User("@me")
 	if err != nil {
 		slog.Error("Unable to fetch bot details")
@@ -24,32 +24,7 @@ func botDetails(s *discordgo.Session) (err error) {
 	header := []string{"User ID", "Username", "Discriminator"}
 	data := []string{botUser.ID, botUser.Username, botUser.Discriminator}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader(header)
-	table.SetAutoWrapText(false)
-	table.SetAlignment(tablewriter.ALIGN_CENTER)
-	table.SetBorder(true)
-	table.Append(data)
-	table.Render()
-	return
-}
-
-func RunBot() (err error) {
-	Token := ""
-	// Initialize DiscordGo session
-	if len(Token) == 0 {
-		err = errors.New("bot token not set or provided")
-		return
-	}
-	dg, err := discordgo.New("Bot " + Token)
-	if err != nil {
-		slog.Error("Unable to create a Discord session")
-		return
-	}
-
-	if err = botDetails(dg); err != nil {
-		return err
-	}
+	utils.PrintInTable(header, data)
 
 	fmt.Println("Press \"c\" to continue or any other key to exit...")
 	var input string
@@ -60,18 +35,40 @@ func RunBot() (err error) {
 		slog.Warn("Exiting...")
 		return
 	}
+	return
+}
+
+func RunBot() (err error) {
+	config, err := utils.GetConfigs()
+	if err != nil {
+		return
+	}
+	// Initialize DiscordGo session
+	if len(config.BotToken) == 0 {
+		err = errors.New("bot token not set or provided")
+		return
+	}
+	s, err := discordgo.New("Bot " + config.BotToken)
+	if err != nil {
+		slog.Error("Unable to create a Discord session")
+		return
+	}
+
+	if err = preFlightCheck(s); err != nil {
+		return err
+	}
 
 	// Set up event handlers
-	dg.AddHandler(bot.OnMessageCreate)
+	s.AddHandler(bot.OnMessageCreate)
 
 	// Register the UserJoin event handler
-	dg.AddHandler(events.HandleUserJoin)
+	s.AddHandler(events.HandleUserJoin)
 
-	dg.Identify.Intents = discordgo.IntentGuildMessages
+	s.Identify.Intents = discordgo.IntentGuildMessages
 
 	// Open the Discord connection
 	slog.Info("Starting the Bot...")
-	if err = dg.Open(); err != nil {
+	if err = s.Open(); err != nil {
 		slog.Error("Unable to open the websocket connection")
 		return
 	}
@@ -82,7 +79,7 @@ func RunBot() (err error) {
 	<-sc
 
 	slog.Warn("Shutting down the bot...")
-	dg.Close()
+	s.Close()
 	slog.Info("Bot is now stopped")
 	return
 }

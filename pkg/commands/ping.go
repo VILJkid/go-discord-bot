@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/VILJkid/go-discord-bot/pkg/utils"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -29,7 +30,7 @@ func (p *Ping) ExecuteCommand(ctx context.Context) (err error) {
 	s := p.Session
 	m := p.MessageCreate
 
-	slog.InfoContext(ctx, "Command recieved:", "command", "ping")
+	slog.InfoContext(ctx, "Command recieved:", "command", utils.CommandPing)
 	s.ChannelMessageSend(m.ChannelID, "Pong!")
 	slog.InfoContext(ctx, "Response sent:", "message", "Pong!")
 	return

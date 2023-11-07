@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log/slog"
 
 	"github.com/VILJkid/go-discord-bot/app"
 )
@@ -9,6 +9,6 @@ import (
 func main() {
 	err := app.RunBot()
 	if err != nil {
-		fmt.Printf("Error starting the bot: %s\n", err)
+		slog.Error("Failed starting the bot:", "reason", err)
 	}
 }

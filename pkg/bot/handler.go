@@ -17,16 +17,26 @@ type Command interface {
 	ExecuteCommand(context.Context) error
 }
 
+func ErrorMessageEmbed(description string) *discordgo.MessageEmbed {
+	return &discordgo.MessageEmbed{
+		Title:       "Error",
+		Description: description,
+		Color:       16711680,
+	}
+}
+
 func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate, c string, a []string) {
 	var commandStruct Command
-
-	switch strings.ToLower(c) {
-	case "ping":
+	c = strings.ToLower(c)
+	switch c {
+	case utils.CommandPing:
 		commandStruct = new(commands.Ping)
-	case "pong":
+	case utils.CommandPong:
 		commandStruct = new(commands.Pong)
 	default:
-		slog.Error("unknown command provided:", "command", c)
+		embed := ErrorMessageEmbed("Command not recognized: " + c)
+		s.ChannelMessageSendEmbed(m.ChannelID, embed)
+		slog.Error("Command not recognized:", "command", c)
 		return
 	}
 
