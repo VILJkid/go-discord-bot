@@ -27,12 +27,19 @@ func ErrorMessageEmbed(description string) *discordgo.MessageEmbed {
 
 func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate, c string, a []string) {
 	var commandStruct Command
+
+	ctx := context.WithValue(context.Background(), utils.ConstContextRequestID, uuid.New().String())
+	slog.InfoContext(ctx, "Request started:", string(utils.ConstContextRequestID), ctx.Value(utils.ConstContextRequestID))
+	defer slog.InfoContext(ctx, "Request finished:", string(utils.ConstContextRequestID), ctx.Value(utils.ConstContextRequestID))
+
 	c = strings.ToLower(c)
 	switch c {
 	case utils.CommandPing:
 		commandStruct = new(commands.Ping)
 	case utils.CommandPong:
 		commandStruct = new(commands.Pong)
+	case utils.CommandCreateChannel:
+		commandStruct = new(commands.CreateChannel)
 	default:
 		embed := ErrorMessageEmbed("Command not recognized: " + c)
 		s.ChannelMessageSendEmbed(m.ChannelID, embed)
@@ -40,9 +47,7 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate, c string, a
 		return
 	}
 
-	ctx := context.WithValue(context.Background(), utils.ConstContextRequestID, uuid.New().String())
-	slog.InfoContext(ctx, "Request started:", string(utils.ConstContextRequestID), ctx.Value(utils.ConstContextRequestID))
-	defer slog.InfoContext(ctx, "Request finished:", string(utils.ConstContextRequestID), ctx.Value(utils.ConstContextRequestID))
+	slog.InfoContext(ctx, "Command recieved:", "command", c)
 
 	if err := commandStruct.SetCommandConfig(ctx, s, m, a); err != nil {
 		slog.ErrorContext(ctx, "Unable to set the command config:", "command", c, "reason", err)

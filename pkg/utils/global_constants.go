@@ -7,6 +7,7 @@ const (
 )
 
 const (
-	CommandPing = "ping"
-	CommandPong = "pong"
+	CommandPing          = "ping"
+	CommandPong          = "pong"
+	CommandCreateChannel = "create-channel"
 )
