@@ -1,7 +1,7 @@
 package utils
 
 const (
-	ConstContextRequestID ContextKey = "requestID"
+	ConstContextRequestID = "requestID"
 
 	ConstConfigFile = ".config.yml"
 )

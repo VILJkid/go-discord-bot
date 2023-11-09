@@ -28,25 +28,23 @@ func (c *CreateChannel) ValidateCommand(ctx context.Context) (err error) {
 func (c *CreateChannel) ExecuteCommand(ctx context.Context) (err error) {
 	s := c.Session
 	m := c.MessageCreate
-	user := m.Author
-	guildID := m.GuildID
 
-	channelName := "private-channel"
+	channelName := "private"
 	if len(c.Args) >= 1 {
 		channelName = c.Args[0]
 	}
 
-	channel, err := s.GuildChannelCreateComplex(guildID, discordgo.GuildChannelCreateData{
+	channel, err := s.GuildChannelCreateComplex(m.GuildID, discordgo.GuildChannelCreateData{
 		Name: channelName,
 		Type: discordgo.ChannelTypeGuildText,
 		PermissionOverwrites: []*discordgo.PermissionOverwrite{
 			{
-				ID:    user.ID,
+				ID:    m.Author.ID,
 				Type:  discordgo.PermissionOverwriteTypeMember,
 				Allow: discordgo.PermissionViewChannel | discordgo.PermissionManageMessages,
 			},
 			{
-				ID:   guildID,
+				ID:   m.GuildID,
 				Type: discordgo.PermissionOverwriteTypeRole,
 				Deny: discordgo.PermissionViewChannel,
 			},
@@ -59,7 +57,7 @@ func (c *CreateChannel) ExecuteCommand(ctx context.Context) (err error) {
 		return
 	}
 
-	successMsg := "Private channel created!"
+	successMsg := channelName + " channel created!"
 	s.ChannelMessageSend(m.ChannelID, successMsg)
 	slog.InfoContext(ctx, "Response sent:", "message", successMsg)
 	successMsg = "Hi " + m.Author.Mention() + "! Only you can see this channel"

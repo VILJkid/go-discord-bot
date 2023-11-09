@@ -28,9 +28,11 @@ func ErrorMessageEmbed(description string) *discordgo.MessageEmbed {
 func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate, c string, a []string) {
 	var commandStruct Command
 
-	ctx := context.WithValue(context.Background(), utils.ConstContextRequestID, uuid.New().String())
-	slog.InfoContext(ctx, "Request started:", string(utils.ConstContextRequestID), ctx.Value(utils.ConstContextRequestID))
-	defer slog.InfoContext(ctx, "Request finished:", string(utils.ConstContextRequestID), ctx.Value(utils.ConstContextRequestID))
+	ctx := context.Background()
+	ctx = utils.SetContextRequestID(ctx, uuid.NewString())
+
+	slog.InfoContext(ctx, "Request started:", utils.ConstContextRequestID, utils.GetContextRequestID(ctx))
+	defer slog.InfoContext(ctx, "Request finished:", utils.ConstContextRequestID, utils.GetContextRequestID(ctx))
 
 	c = strings.ToLower(c)
 	switch c {
