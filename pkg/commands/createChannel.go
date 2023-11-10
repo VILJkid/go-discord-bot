@@ -34,9 +34,18 @@ func (c *CreateChannel) ExecuteCommand(ctx context.Context) (err error) {
 		channelName = c.Args[0]
 	}
 
+	invokingChannel, err := s.Channel(m.ChannelID)
+	if err != nil {
+		errMsg := "Failed to fetch the channel info!"
+		s.ChannelMessageSend(m.ChannelID, errMsg)
+		slog.ErrorContext(ctx, errMsg)
+		return
+	}
+
 	channel, err := s.GuildChannelCreateComplex(m.GuildID, discordgo.GuildChannelCreateData{
-		Name: channelName,
-		Type: discordgo.ChannelTypeGuildText,
+		Name:     channelName,
+		Type:     discordgo.ChannelTypeGuildText,
+		ParentID: invokingChannel.ParentID,
 		PermissionOverwrites: []*discordgo.PermissionOverwrite{
 			{
 				ID:    m.Author.ID,
