@@ -27,5 +27,9 @@ func OnMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	HandleCommand(s, m, command, parts[1:])
+	HandleMessage(s, m, command, parts[1:])
+}
+
+func OnInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	HandleInteraction(s, i)
 }

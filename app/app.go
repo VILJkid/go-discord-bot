@@ -64,6 +64,8 @@ func RunBot() (err error) {
 	// Register the UserJoin event handler
 	s.AddHandler(events.HandleUserJoin)
 
+	s.AddHandler(bot.OnInteractionCreate)
+
 	s.Identify.Intents = discordgo.IntentGuildMessages
 
 	// Open the Discord connection

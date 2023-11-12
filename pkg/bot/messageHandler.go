@@ -13,8 +13,8 @@ import (
 
 type Command interface {
 	SetCommandConfig(context.Context, *discordgo.Session, *discordgo.MessageCreate, []string) error
-	ValidateCommand(context.Context) error
-	ExecuteCommand(context.Context) error
+	ValidateCommand() error
+	ExecuteCommand() error
 }
 
 func ErrorMessageEmbed(description string) *discordgo.MessageEmbed {
@@ -25,23 +25,24 @@ func ErrorMessageEmbed(description string) *discordgo.MessageEmbed {
 	}
 }
 
-func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate, c string, a []string) {
-	var commandStruct Command
-
+func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, c string, a []string) {
 	ctx := context.Background()
 	ctx = utils.SetContextRequestID(ctx, uuid.NewString())
 
 	slog.InfoContext(ctx, "Request started:", utils.ConstContextRequestID, utils.GetContextRequestID(ctx))
 	defer slog.InfoContext(ctx, "Request finished:", utils.ConstContextRequestID, utils.GetContextRequestID(ctx))
 
+	var command Command
 	c = strings.ToLower(c)
 	switch c {
 	case utils.CommandPing:
-		commandStruct = new(commands.Ping)
+		command = new(commands.Ping)
 	case utils.CommandPong:
-		commandStruct = new(commands.Pong)
+		command = new(commands.Pong)
 	case utils.CommandCreateChannel:
-		commandStruct = new(commands.CreateChannel)
+		command = new(commands.CreateChannel)
+	case utils.CommandCreateChannelButton:
+		command = new(commands.CreateChannelButton)
 	default:
 		embed := ErrorMessageEmbed("Command not recognized: " + c)
 		s.ChannelMessageSendEmbed(m.ChannelID, embed)
@@ -51,15 +52,15 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate, c string, a
 
 	slog.InfoContext(ctx, "Command recieved:", "command", c)
 
-	if err := commandStruct.SetCommandConfig(ctx, s, m, a); err != nil {
+	if err := command.SetCommandConfig(ctx, s, m, a); err != nil {
 		slog.ErrorContext(ctx, "Unable to set the command config:", "command", c, "reason", err)
 		return
 	}
-	if err := commandStruct.ValidateCommand(ctx); err != nil {
+	if err := command.ValidateCommand(); err != nil {
 		slog.ErrorContext(ctx, "Unable to validate the command:", "command", c, "reason", err)
 		return
 	}
-	if err := commandStruct.ExecuteCommand(ctx); err != nil {
+	if err := command.ExecuteCommand(); err != nil {
 		slog.ErrorContext(ctx, "Unable to execute the command:", "command", c, "reason", err)
 		return
 	}

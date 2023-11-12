@@ -7,7 +7,10 @@ const (
 )
 
 const (
-	CommandPing          = "ping"
-	CommandPong          = "pong"
-	CommandCreateChannel = "create-channel"
+	CommandPing                = "ping"
+	CommandPong                = "pong"
+	CommandCreateChannel       = "create-channel"
+	CommandCreateChannelButton = "create-channel-button"
+
+	InteractionCustomIDCreateChannelButton = "#create-channel-button"
 )
