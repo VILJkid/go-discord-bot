@@ -3,7 +3,6 @@ package interactions
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
@@ -15,8 +14,6 @@ type CreateChannelButton struct {
 	InteractionCreate *discordgo.InteractionCreate
 }
 
-// SetCommandConfig and other methods...
-
 func (ccb *CreateChannelButton) SetInteractionConfig(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (err error) {
 	ccb.Context = ctx
 	ccb.Session = s
@@ -25,34 +22,30 @@ func (ccb *CreateChannelButton) SetInteractionConfig(ctx context.Context, s *dis
 }
 
 func (ccb *CreateChannelButton) InteractionResponse() (err error) {
-	// Your logic to handle the interaction for the create-channel-button command
-	// ...
+	s := ccb.Session
+	i := ccb.InteractionCreate
 
-	user := ccb.InteractionCreate.Member.User
-
-	// Get the guild ID where the interaction occurred
-	guildID := ccb.InteractionCreate.GuildID
-
-	invokingChannel, err := ccb.Session.Channel(ccb.InteractionCreate.ChannelID)
+	invokingChannel, err := s.Channel(i.ChannelID)
 	if err != nil {
+		errMsg := "Failed to fetch the channel info!"
+		s.ChannelMessageSend(i.ChannelID, errMsg)
+		slog.ErrorContext(ccb.Context, errMsg)
 		return
 	}
 
-	// Create a new channel with the user as the only member
-	newChannel, err := ccb.Session.GuildChannelCreateComplex(guildID, discordgo.GuildChannelCreateData{
-		Name:     "private-channel",
+	newChannelName := "private-channel"
+	newChannel, err := s.GuildChannelCreateComplex(i.GuildID, discordgo.GuildChannelCreateData{
+		Name:     newChannelName,
 		Type:     discordgo.ChannelTypeGuildText,
 		ParentID: invokingChannel.ParentID,
 		PermissionOverwrites: []*discordgo.PermissionOverwrite{
-			// Allow the user to view and send messages
 			{
-				ID:    user.ID,
+				ID:    i.Member.User.ID,
 				Type:  discordgo.PermissionOverwriteTypeMember,
 				Allow: discordgo.PermissionViewChannel | discordgo.PermissionSendMessages,
 			},
-			// Deny everyone else the permission to view the channel
 			{
-				ID:   guildID,
+				ID:   i.GuildID,
 				Type: discordgo.PermissionOverwriteTypeRole,
 				Deny: discordgo.PermissionViewChannel,
 			},
@@ -60,27 +53,27 @@ func (ccb *CreateChannelButton) InteractionResponse() (err error) {
 	})
 
 	if err != nil {
-		log.Println("Error creating private channel:", err)
+		errMsg := "Failed to create the private channel!"
+		s.ChannelMessageSend(i.ChannelID, errMsg)
+		slog.ErrorContext(ccb.Context, errMsg)
 		return
 	}
 
 	// Send a confirmation message to the user who clicked the button
-	err = ccb.Session.InteractionRespond(ccb.InteractionCreate.Interaction, &discordgo.InteractionResponse{
+	if err = ccb.Session.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("Private channel created for %s. Channel ID: %s", user.Mention(), newChannel.ID),
+			Content: fmt.Sprintf("Private channel %q created for %s. Channel ID: %s", newChannelName, i.Member.User.Mention(), newChannel.ID),
 		},
-	})
-
-	if err != nil {
-		log.Println("Error responding to interaction:", err)
+	}); err != nil {
+		errMsg := "Failed to respond to the interaction!"
+		s.ChannelMessageSend(i.ChannelID, errMsg)
+		slog.ErrorContext(ccb.Context, errMsg)
 		return
 	}
 
-	log.Printf("Private channel created for %s. Channel ID: %s\n", user.Username, newChannel.ID)
-
 	successMsg := "Interaction handled for create-channel-button!"
-	ccb.Session.ChannelMessageSend(ccb.InteractionCreate.ChannelID, successMsg)
+	ccb.Session.ChannelMessageSend(i.ChannelID, successMsg)
 	slog.InfoContext(ccb.Context, "Interaction handled:", "message", successMsg)
 	return
 }

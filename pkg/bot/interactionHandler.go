@@ -36,11 +36,11 @@ func HandleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	if err := interaction.SetInteractionConfig(ctx, s, i); err != nil {
-		// slog.ErrorContext(ctx, "Unable to set the command config:", "command", c, "reason", err)
+		slog.ErrorContext(ctx, "Unable to set the interaction config:", "reason", err)
 		return
 	}
 	if err := interaction.InteractionResponse(); err != nil {
-		// slog.ErrorContext(ctx, "Unable to execute the command:", "command", c, "reason", err)
+		slog.ErrorContext(ctx, "Unable to respond to the interaction:", "reason", err)
 		return
 	}
 }

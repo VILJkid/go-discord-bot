@@ -2,7 +2,7 @@ package commands
 
 import (
 	"context"
-	"log"
+	"log/slog"
 
 	"github.com/VILJkid/go-discord-bot/pkg/utils"
 	"github.com/bwmarrin/discordgo"
@@ -34,13 +34,12 @@ func (c *CreateChannelButton) ExecuteCommand() (err error) {
 
 	label := "Create Channel"
 	button := discordgo.Button{
-		Label: label,
-		Style: discordgo.SuccessButton,
-		// Emoji:    discordgo.ComponentEmoji{},
+		Label:    label,
+		Style:    discordgo.SuccessButton,
 		CustomID: utils.InteractionCustomIDCreateChannelButton,
 	}
 
-	a := &discordgo.MessageSend{
+	messageComponentData := &discordgo.MessageSend{
 		Components: []discordgo.MessageComponent{
 			discordgo.ActionsRow{
 				Components: []discordgo.MessageComponent{button},
@@ -48,12 +47,7 @@ func (c *CreateChannelButton) ExecuteCommand() (err error) {
 		},
 	}
 
-	sentMessage, err := s.ChannelMessageSendComplex(m.ChannelID, a)
-	if err != nil {
-		log.Println("Error sending message:", err)
-		return
-	}
-
-	log.Println("Message sent with button. Message ID:", sentMessage.ID)
+	s.ChannelMessageSendComplex(m.ChannelID, messageComponentData)
+	slog.InfoContext(c.Context, "Message sent with button")
 	return
 }
